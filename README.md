@@ -4,18 +4,32 @@
 
 2.Tech Stack. List the technologies used in each layer of your system, including frontend framework and tooling, backend framework, database, authentication (if applicable), and any external services or APIs.
 
+### Frontend
+- React
+- Vite
+- TypeScript
+- HTML / CSS
+
+### Backend
+- Node.js
+- Express.js
+
+### Database
+- MySQL?
+
+### Authentication
+- Not implemented yet
+
+### External Services
+- None
 
 3.Architecture Diagram. Include a system architecture diagram showing the user, frontend, backend, database, and any external services, with labeled arrows indicating how the components communicate.
 
-images here...?
+
 
 4.Prerequisites. List all required software needed to run the project locally (e.g., Node.js, PostgreSQL, and psql available in the system PATH). Provide links to official installation instructions and include commands to verify installation.
 
-- Node
-- PostgreSQL
-- psql
-- npm
-- Git
+
 
 5.Installation and Setup. Provide clear step-by-step instructions for installing dependencies, creating the database, running schema.sql and seed.sql, and configuring environment variables if required.
 
