@@ -47,7 +47,7 @@ function App() {
         <FitnessPage isActive={activePage === 'fitness'} data={childData} />
         <DietPage isActive={activePage === 'diet'} data={childData} />
         <ScreenTimePage isActive={activePage === 'screen'} data={childData} />
-        <GoalsPage isActive={activePage === 'goals'} data={childData} />
+        <GoalsPage isActive={activePage === 'goals'} activeChild={activeChild} />
         <ProfilePage isActive={activePage === 'profile'} data={childData} />
         <MenuPage isActive={activePage === 'menu'} navigateTo={navigateTo} />
         <LoginPage isActive={activePage === 'login'} navigateTo={navigateTo} />
