@@ -1,124 +1,324 @@
 # Healthy Habits
 
 ## 1. App Summary
-Healthy Habits is a parent-guided wellness app for building consistent daily routines in nutrition, movement, and balanced screen use for children. Many families struggle to track these habits in one place, which makes progress hard to see and maintain. This app combines core habit categories into a single dashboard so parents can monitor trends and support healthy behavior without shaming language. The primary user is a parent or caregiver managing one or more child profiles. Parents can view goals, activity ideas, food logs, and screen-time summaries in a kid-friendly interface. The long-term objective is to move from a UI prototype to a full-stack app where actions persist to a database. This repository currently includes the frontend plus database schema and seed scripts as the backend foundation.
+
+Healthy Habits is a family wellness tracking app that helps parents build consistent daily routines around nutrition, physical activity, and balanced screen use for their children. Many families struggle to track these habits in one place, making progress hard to see and harder to sustain. This app consolidates the core habit categories — fitness, diet, screen time, and goals — into a single parent-managed dashboard with child-specific profiles. The primary user is a parent or caregiver overseeing one or more children; a secondary user is a coach or admin with broader access across families. Parents can add and track health goals for each child, view activity and nutrition logs, and monitor screen-time trends in a clean, kid-friendly interface. The vertical slice implemented in this version delivers full CRUD functionality for the Goals feature, with data persisted to a local PostgreSQL database through a REST API. The long-term objective is to extend live persistence across all feature areas and add authentication.
+
+---
 
 ## 2. Tech Stack
+
 ### Frontend
-- React 19
-- Vite 6
-- TypeScript 5
-- HTML/CSS
+| Technology | Version | Role |
+|---|---|---|
+| React | 19 | UI component library |
+| TypeScript | 5.7 | Static typing |
+| Vite | 6 | Dev server and bundler |
+| Custom CSS | — | Glassmorphism design system |
 
 ### Backend
-- Planned: Node.js + Express.js API layer (vertical-slice persistence integration in progress)
+| Technology | Version | Role |
+|---|---|---|
+| Node.js | 18+ | JavaScript runtime |
+| Express | 4 | HTTP server and routing |
+| `pg` (node-postgres) | 8 | PostgreSQL client |
+| `cors` | 2 | Cross-origin request handling |
+| `dotenv` | 16 | Environment variable loading |
+| `concurrently` | 9 | Unified dev/start scripts |
 
 ### Database
-- MySQL 8 (SQL scripts included: `db/schema.sql`, `db/seed.sql`)
+| Technology | Version | Role |
+|---|---|---|
+| PostgreSQL | 14+ | Relational database |
 
 ### Authentication
-- Not implemented yet
+Not implemented. The app currently hardcodes `userid: 1` (Jamie Parker) as the active parent.
 
 ### External Services / APIs
-- None
+None.
+
+---
 
 ## 3. Architecture Diagram
+
 ![System Architecture Diagram](docs/SystemArchitecture.png)
 
-Actor → Frontend (Browser)
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Browser                              │
+│                                                             │
+│   React + TypeScript (Vite)  ·  http://localhost:5173       │
+│                                                             │
+│   GoalsPage.tsx  ──── src/api/goals.ts (fetch)             │
+└────────────────────────┬────────────────────────────────────┘
+                         │ HTTP /api/*  (Vite proxy in dev)
+                         │
+┌────────────────────────▼────────────────────────────────────┐
+│                   Express API Server                        │
+│                                                             │
+│   server/index.js  ·  http://localhost:3001                 │
+│                                                             │
+│   GET    /api/goals?childID=<n>   →  list goals             │
+│   POST   /api/goals               →  create goal            │
+│   PUT    /api/goals/:goalID       →  update goal            │
+│   DELETE /api/goals/:goalID       →  delete goal            │
+│   GET    /api/health              →  health check           │
+└────────────────────────┬────────────────────────────────────┘
+                         │ SQL queries (node-postgres pool)
+                         │
+┌────────────────────────▼────────────────────────────────────┐
+│                  PostgreSQL Database                        │
+│                                                             │
+│   Database: healthy_habits                                  │
+│                                                             │
+│   Tables: users · children · goals · activitylogs           │
+│           nutritionlog · screentimelog · streaks            │
+│           workoutideas · recipes · tips                     │
+└─────────────────────────────────────────────────────────────┘
+```
 
-Frontend → Backend (HTTP)
+**Communication flow:**
+1. User interacts with the React frontend in the browser.
+2. The frontend calls `src/api/goals.ts`, which issues `fetch()` requests to `/api/goals`.
+3. In development, Vite proxies `/api/*` to `http://localhost:3001`.
+4. The Express server receives the request and runs a parameterized SQL query via the `pg` pool.
+5. PostgreSQL returns rows; Express serializes them as JSON back to the frontend.
 
-Backend → MySQL (SQL query)
-
-Backend → Frontend (JSON response)
+---
 
 ## 4. Prerequisites
-Install the following software before running locally.
 
-### Required Software
-- Node.js (includes npm): https://nodejs.org/en/download
-- MySQL Server 8.x: https://dev.mysql.com/downloads/mysql/
-- MySQL Command-Line Client (`mysql`) available in your system `PATH`: https://dev.mysql.com/doc/refman/8.0/en/mysql.html
-- Git: https://git-scm.com/downloads
+Install the following before running the project locally.
+
+| Software | Minimum Version | Install Link |
+|---|---|---|
+| Node.js (includes npm) | 18.x | https://nodejs.org/en/download |
+| PostgreSQL | 14.x | https://www.postgresql.org/download |
+| Git | any | https://git-scm.com/downloads |
 
 ### Verify Installation
-Run these commands:
 
 ```bash
-node -v
-npm -v
-mysql --version
+node -v       # expected: v18.x.x or higher
+npm -v        # expected: 9.x.x or higher
+psql --version  # expected: psql (PostgreSQL) 14.x or higher
 git --version
 ```
 
-If each command prints a version, prerequisites are installed correctly.
+Each command should print a version number. If `psql` is not found, ensure the PostgreSQL `bin` directory is added to your system `PATH`.
+
+---
 
 ## 5. Installation and Setup
-1. Clone the repository and move into the project directory.
+
+### Step 1 — Clone the repository
+
 ```bash
 git clone <your-repo-url>
 cd Healthy-Habits-Design
 ```
 
-2. Install frontend dependencies.
+### Step 2 — Install dependencies
+
+Install root dependencies (frontend + shared tooling):
+
 ```bash
 npm install
 ```
 
-3. Create a local MySQL database.
+Install backend dependencies:
+
 ```bash
-mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS healthy_habits;"
+cd server && npm install && cd ..
 ```
 
-4. Apply schema.
+### Step 3 — Set up the database
+
+Run the interactive setup script. It will prompt for your PostgreSQL connection details, create the `healthy_habits` database, apply the full schema, and load seed data. It also writes your `.env` file automatically.
+
 ```bash
-mysql -u root -p healthy_habits < db/schema.sql
+npm run setup
 ```
 
-5. Seed sample data.
+You will be prompted for:
+
+| Prompt | Default | Notes |
+|---|---|---|
+| DB Host | `localhost` | Press Enter to accept |
+| DB Port | `5432` | Press Enter to accept |
+| Database name | `healthy_habits` | Press Enter to accept |
+| DB User | your OS username | Match your local PostgreSQL user |
+| DB Password | *(none)* | Leave blank if using peer/trust auth |
+
+The script performs these actions in order:
+1. Connects to the `postgres` system database and creates `healthy_habits` (skips if it already exists).
+2. Applies the full schema (all 10 tables).
+3. Seeds 10 users, 10 children, and 10 goals.
+4. Writes `.env` at the project root with your credentials.
+
+### Step 4 — Verify the database (optional)
+
 ```bash
-mysql -u root -p healthy_habits < db/seed.sql
+psql -U <your-db-user> healthy_habits -c "SELECT firstname, lastname FROM children WHERE childid IN (1,2);"
 ```
 
-6. Confirm tables exist.
-```bash
-mysql -u root -p -e "USE healthy_habits; SHOW TABLES;"
+Expected output:
+```
+ firstname | lastname
+-----------+----------
+ Avery     | Parker
+ Jordan    | Parker
 ```
 
-Environment variables:
-- Configure backend database connection settings in a `.env` file (for example: host, port, user, password, database).
+### Environment Variables
+
+The setup script writes `.env` automatically. If you need to edit it manually:
+
+```
+# .env (project root)
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=healthy_habits
+DB_USER=<your-postgres-user>
+DB_PASSWORD=<your-password-or-blank>
+
+PORT=3001
+```
+
+---
 
 ## 6. Running the Application
-1. Start the backend server:
-```bash
-npm run server
-```
 
-2. Start the frontend development server:
+### Development (recommended)
+
+A single command starts both the API server and the Vite frontend together with color-coded, labeled output:
+
 ```bash
 npm run dev
 ```
 
-3. Open:
-- `http://localhost:5173`
+| Service | URL |
+|---|---|
+| Frontend (Vite) | http://localhost:5173 |
+| API server (Express) | http://localhost:3001 |
+| API health check | http://localhost:3001/api/health |
 
-API base URL:
-- `http://localhost:3000` (used by the frontend for goal updates)
+Open **http://localhost:5173** in your browser.
+
+In development, Vite proxies all `/api/*` requests to `http://localhost:3001`, so the frontend and backend communicate without CORS issues.
+
+### Production
+
+Build the frontend, then serve both the API and the built frontend preview together:
+
+```bash
+npm run build   # TypeScript check + Vite bundle → dist/
+npm start       # Express API + vite preview
+```
+
+---
 
 ## 7. Verifying the Vertical Slice
-Implemented vertical slice:
-- The `Save Goal` button in the Goals page is connected to backend server logic.
-- The backend updates the `Goals` table and returns the updated goal data.
-- The frontend displays the updated value in the UI.
-- The update persists after page refresh.
 
-Verification steps:
-1. Open the app and navigate to Goals.
-2. Enter a goal and click `Save Goal`.
-3. Confirm a successful API response in the browser network tab (2xx).
-4. Verify the database row changed:
+The implemented vertical slice is **full CRUD for the Goals feature**. It covers the `goals` table in PostgreSQL through a REST API consumed by `GoalsPage.tsx`.
+
+### Step-by-step verification
+
+**1. Navigate to the Goals page.**
+Click **Goals** in the sidebar or bottom tab bar.
+
+**2. Add a new goal.**
+Fill in the "Add a Goal" form on the left card:
+- **Category** — e.g. `Fitness`
+- **Goal Type** — e.g. `Steps`
+- **Target Value** — e.g. `5000`
+- **Unit** — e.g. `steps`
+- **Frequency** — `Daily`
+- **Start Date / End Date** — any date range
+
+Click **Save Goal**. A green "Goal saved!" confirmation appears.
+
+**3. View goals from the database.**
+Click **View Goals**. The app fetches all goals for the selected child from PostgreSQL and renders each one with a progress bar, category badge, and Edit/Delete buttons. The Progress card updates with live completion stats.
+
+**4. Confirm the record was written to the database.**
+
 ```bash
-mysql -u root -p -e "USE healthy_habits; SELECT * FROM Goals ORDER BY goalID DESC LIMIT 5;"
+psql -U <your-db-user> healthy_habits -c \
+  "SELECT goalid, category, goaltype, targetvalue, unit, frequency FROM goals ORDER BY goalid DESC LIMIT 5;"
 ```
-5. Refresh the page and confirm the saved goal value is still shown in the UI.
+
+Your new goal appears at the top of the results.
+
+**5. Edit a goal.**
+Click **Edit** on any goal card. An inline form opens pre-populated with the current values. Change any field and click **Update Goal**. The list refreshes immediately with the updated data.
+
+**6. Confirm the update persisted.**
+
+```bash
+psql -U <your-db-user> healthy_habits -c \
+  "SELECT goalid, category, targetvalue, value FROM goals ORDER BY goalid DESC LIMIT 5;"
+```
+
+The updated values are reflected in the database row.
+
+**7. Delete a goal.**
+Click **Delete** on any goal card and confirm the prompt. The goal is removed from the list and from the database immediately.
+
+**8. Confirm the delete persisted.**
+
+```bash
+psql -U <your-db-user> healthy_habits -c \
+  "SELECT COUNT(*) FROM goals;"
+```
+
+The count decreases by one.
+
+**9. Verify persistence across refresh.**
+Refresh the browser (`Cmd+R` / `Ctrl+R`), navigate back to Goals, and click **View Goals** again. Only the goals remaining in the database are shown — confirming that all changes persisted.
+
+---
+
+## Project Structure
+
+```
+Healthy-Habits-Design/
+├── src/                          # React frontend
+│   ├── api/
+│   │   └── goals.ts              # Typed fetch client for Goals API
+│   ├── components/
+│   │   ├── pages/
+│   │   │   ├── GoalsPage.tsx     # Full CRUD Goals UI (vertical slice)
+│   │   │   ├── HomePage.tsx
+│   │   │   ├── FitnessPage.tsx
+│   │   │   ├── DietPage.tsx
+│   │   │   ├── ScreenTimePage.tsx
+│   │   │   ├── ProfilePage.tsx
+│   │   │   ├── LoginPage.tsx
+│   │   │   └── MenuPage.tsx
+│   │   ├── Sidebar.tsx
+│   │   ├── TopBar.tsx
+│   │   ├── MobileTabBar.tsx
+│   │   └── MiniChart.tsx
+│   ├── App.tsx                   # Root component and page routing
+│   ├── data.ts                   # Static mock data (non-Goals pages)
+│   ├── styles.css
+│   └── main.tsx
+├── server/                       # Express API
+│   ├── routes/
+│   │   └── goals.js              # GET / POST / PUT / DELETE /api/goals
+│   ├── index.js                  # Express entry point (port 3001)
+│   ├── db.js                     # pg connection pool
+│   ├── setup.js                  # Interactive DB setup script
+│   ├── schema-postgres.sql       # PostgreSQL schema reference
+│   ├── seed-postgres.sql         # PostgreSQL seed reference
+│   └── package.json              # Server dependencies
+├── docs/
+│   └── SystemArchitecture.png
+├── schema.sql                    # Original MySQL schema (reference)
+├── seed.sql                      # Original MySQL seed (reference)
+├── .env                          # DB credentials (generated by npm run setup)
+├── vite.config.ts                # Vite config with /api proxy
+├── package.json                  # Root scripts and frontend dependencies
+└── index.html
+```
