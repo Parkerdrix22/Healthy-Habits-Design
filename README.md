@@ -14,7 +14,7 @@ Healthy Habits is a parent-guided wellness app for building consistent daily rou
 - Planned: Node.js + Express.js API layer (vertical-slice persistence integration in progress)
 
 ### Database
-- MySQL 8 (SQL scripts included: `schema.sql`, `seed.sql`)
+- MySQL 8 (SQL scripts included: `db/schema.sql`, `db/seed.sql`)
 
 ### Authentication
 - Not implemented yet
@@ -24,6 +24,14 @@ Healthy Habits is a parent-guided wellness app for building consistent daily rou
 
 ## 3. Architecture Diagram
 ![System Architecture Diagram](docs/SystemArchitecture.png)
+
+Actor → Frontend (Browser)
+
+Frontend → Backend (HTTP)
+
+Backend → MySQL (SQL query)
+
+Backend → Frontend (JSON response)
 
 ## 4. Prerequisites
 Install the following software before running locally.
@@ -65,12 +73,12 @@ mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS healthy_habits;"
 
 4. Apply schema.
 ```bash
-mysql -u root -p healthy_habits < schema.sql
+mysql -u root -p healthy_habits < db/schema.sql
 ```
 
 5. Seed sample data.
 ```bash
-mysql -u root -p healthy_habits < seed.sql
+mysql -u root -p healthy_habits < db/seed.sql
 ```
 
 6. Confirm tables exist.
@@ -79,35 +87,38 @@ mysql -u root -p -e "USE healthy_habits; SHOW TABLES;"
 ```
 
 Environment variables:
-- No environment variables are required for the current frontend-only runtime in this repository.
-- When backend API wiring is added, create a `.env` file for DB connection details (for example: host, port, user, password, database).
+- Configure backend database connection settings in a `.env` file (for example: host, port, user, password, database).
 
 ## 6. Running the Application
-Current repository runtime:
+1. Start the backend server:
+```bash
+npm run server
+```
 
-1. Start the frontend development server:
+2. Start the frontend development server:
 ```bash
 npm run dev
 ```
 
-2. Open:
+3. Open:
 - `http://localhost:5173`
 
-Backend status:
-- A production backend service is not yet included in this repo's runnable scripts.
-- Database setup is complete via `schema.sql` and `seed.sql` and is ready for API integration.
+API base URL:
+- `http://localhost:3000` (used by the frontend for goal updates)
 
 ## 7. Verifying the Vertical Slice
-Current status:
-- The UI is functional, and the database can be created and seeded locally.
-- A fully wired "one working button updates DB and reflects UI state" flow is not yet committed in this repository.
+Implemented vertical slice:
+- The `Save Goal` button in the Goals page is connected to backend server logic.
+- The backend updates the `Goals` table and returns the updated goal data.
+- The frontend displays the updated value in the UI.
+- The update persists after page refresh.
 
-What to verify once the backend endpoint is connected:
-1. Open the app and navigate to the page containing the wired button (for example, `Save Goal` in Goals).
-2. Trigger the button action in the UI.
-3. Confirm the API call succeeded (browser network tab should show a 2xx response).
-4. Check the database row changed:
+Verification steps:
+1. Open the app and navigate to Goals.
+2. Enter a goal and click `Save Goal`.
+3. Confirm a successful API response in the browser network tab (2xx).
+4. Verify the database row changed:
 ```bash
 mysql -u root -p -e "USE healthy_habits; SELECT * FROM Goals ORDER BY goalID DESC LIMIT 5;"
 ```
-5. Refresh the browser and confirm the updated value is still displayed.
+5. Refresh the page and confirm the saved goal value is still shown in the UI.
